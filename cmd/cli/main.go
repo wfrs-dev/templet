@@ -36,6 +36,8 @@ func main() {
 	prj, err := project.New(source, cfg.Routes)
 	exitErr(err)
 
+	defer prj.Delete()
+
 	err = prj.Init()
 	exitErr(err)
 
@@ -48,11 +50,6 @@ func main() {
 
 	err = prj.Run(name)
 	exitErr(err)
-
-	// fmt.Println("Datos de entrada:")
-	// for k, v := range data {
-	// 	fmt.Printf(" -> %s: %s\n", k, v)
-	// }
 }
 
 func exit(msg string) {

@@ -3,7 +3,6 @@ package project
 import (
 	"fmt"
 	"io"
-	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,7 +22,6 @@ type Project struct {
 func New(location string, mdest map[string]string) (*Project, error) {
 	var dir string
 	var err error
-	slog.Debug(fmt.Sprintf("Directorio temporal a traves de la variable de entorno TEMPLET_TMP: %q", os.Getenv("TEMPLET_TMP")))
 	if d, ok := os.LookupEnv("TEMPLET_TMP"); ok {
 		dir = filepath.Join(d, "templet-"+utils.RandString(5))
 		err = os.MkdirAll(dir, 0755)
@@ -36,7 +34,6 @@ func New(location string, mdest map[string]string) (*Project, error) {
 			return nil, err
 		}
 	}
-	slog.Debug(fmt.Sprintf("Creando directorio temporal %q", dir))
 	return &Project{
 		location: location,
 		baseDir:  dir,
@@ -47,6 +44,10 @@ func New(location string, mdest map[string]string) (*Project, error) {
 
 func (p *Project) Dir() string {
 	return p.baseDir
+}
+
+func (p *Project) Delete() {
+	os.RemoveAll(p.baseDir)
 }
 
 func (p *Project) Run(name string) error {
@@ -62,8 +63,6 @@ func (p *Project) generate(name string) error {
 	cwd, _ := os.Getwd()
 	dst := filepath.Join(cwd, name)
 
-	slog.Debug(fmt.Sprintf("Generando proyecto %q, de %q", dst, p.baseDir))
-
 	err := p.copyDir(p.baseDir, dst, true)
 	if err != nil {
 		return err
@@ -73,7 +72,6 @@ func (p *Project) generate(name string) error {
 }
 
 func (p *Project) Init() error {
-	slog.Debug(fmt.Sprintf("Clonando proyecto %q", p.location))
 	elems := strings.SplitN(p.location, ":", 2)
 	if len(elems) != 2 {
 		return fmt.Errorf("`%s` no es un repositorio con formato válido (tipo:grupo/nombre)", p.location)
@@ -81,7 +79,6 @@ func (p *Project) Init() error {
 	if d, ok := p.mapDest[elems[0]]; ok {
 		return p.clone(fmt.Sprintf(d, elems[1]))
 	} else if elems[0] == "file" {
-		slog.Info(fmt.Sprintf("Copiando proyecto %q", p.baseDir))
 		return p.copyDir(elems[1], p.baseDir)
 	} else {
 		return fmt.Errorf("`%s` no es un repositorio válido", p.location)
@@ -89,7 +86,6 @@ func (p *Project) Init() error {
 }
 
 func (p *Project) clone(url string) error {
-	slog.Info(fmt.Sprintf("Clonando repositorio %q", url))
 	cmd := exec.Command("git", "clone", url, p.baseDir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -140,7 +136,6 @@ func (p *Project) copyFile(src string, dst string, render ...bool) error {
 	var mdst string = dst
 	if canRender {
 		mdst = replace(strings.Replace(dst, ".tmpl", "", 1), p.mapDest)
-		slog.Debug(fmt.Sprintf("> Copiando archivo %q -> %q", src, mdst))
 		if strings.HasSuffix(src, "meta.hjson") {
 			return nil
 		}
