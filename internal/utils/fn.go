@@ -76,6 +76,7 @@ func TernaryIf[T NativeData](c bool, rt, rf T) T {
 	return rf
 }
 
+// Time2Esp convierte la fecha y hora especificadas en un texto humano en español
 func Time2Esp(t time.Time) string {
 	items := strings.Split(t.Format("Mon:Jan:02:2006:03:04:PM"), ":")
 
@@ -84,7 +85,16 @@ func Time2Esp(t time.Time) string {
 	return fmt.Sprintf("%s, %s de %s de %s. %s:%s %s", days[day], dayOfMonth, months[month], year, hour, minute, meridian)
 }
 
-// Marshal function returns slugifies string "s"
+// Replace reemplaza las claves `@Key` por sus valores en el string "s"
+func Replace(s string, data map[string]string) string {
+	for k, v := range data {
+		s = strings.ReplaceAll(s, k, v)
+	}
+
+	return s
+}
+
+// Slugify convierte el string "s" en un slug
 func Slugify(s string) string {
 	for _, r := range rExps {
 		s = r.re.ReplaceAllString(s, r.ch)
