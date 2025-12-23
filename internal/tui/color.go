@@ -9,23 +9,51 @@ import (
 
 var reColor *regexp.Regexp = regexp.MustCompile(`(<[^>]+>)`)
 
-var colors = map[string][]int{
-	"black":    {59, 66, 82},
-	"red":      {191, 97, 106},
-	"green":    {163, 190, 140},
-	"yellow":   {235, 203, 139},
-	"blue":     {129, 161, 193},
-	"magenta":  {180, 142, 173},
-	"cyan":     {136, 192, 208},
-	"white":    {229, 233, 240},
-	"bblack":   {76, 86, 106},
-	"bred":     {208, 111, 121},
-	"bgreen":   {180, 215, 165},
-	"byellow":  {242, 216, 167},
-	"bblue":    {143, 173, 217},
-	"bmagenta": {199, 168, 199},
-	"bcyan":    {154, 213, 227},
-	"bwhite":   {255, 255, 255},
+var colors = map[string]int{
+	// Foreground
+	"black":  30,
+	"red":    31,
+	"green":  32,
+	"yellow": 33,
+	"blue":   34,
+	"purple": 35,
+	"cyan":   36,
+	"white":  37,
+	// Background
+	"bgBlack":  40,
+	"bgRed":    41,
+	"bgGreen":  42,
+	"bgYellow": 43,
+	"bgBlue":   44,
+	"bgPurple": 45,
+	"bgCyan":   46,
+	"bgWhite":  47,
+	// Bright Foreground
+	"brightBlack":  90,
+	"brightRed":    91,
+	"brightGreen":  92,
+	"brightYellow": 93,
+	"brightBlue":   94,
+	"brightPurple": 95,
+	"brightCyan":   96,
+	"brightWhite":  97,
+	// Bright Background
+	"bgBrightBlack":  100,
+	"bgBrightRed":    101,
+	"bgBrightGreen":  102,
+	"bgBrightYellow": 103,
+	"bgBrightBlue":   104,
+	"bgBrightPurple": 105,
+	"bgBrightCyan":   106,
+	"bgBrightWhite":  107,
+	// Properties
+	"bold":          1,
+	"italic":        3,
+	"underline":     4,
+	"strikethrough": 9,
+
+	"reset": 0,
+	"/":     0,
 }
 
 func Colorize(format string, a ...any) string {
@@ -37,15 +65,7 @@ func Colorize(format string, a ...any) string {
 			if c {
 				lowerKey := strings.ToLower(strings.Trim(s, " <>"))
 				if value, ok := colors[lowerKey]; ok {
-					return fmt.Sprintf("\033[38;2;%d;%d;%dm", value[0], value[1], value[2])
-				} else if lowerKey == "/" || lowerKey == "reset" {
-					return "\033[0m"
-				} else if lowerKey == "bold" {
-					return "\033[1m"
-				} else if lowerKey == "italic" {
-					return "\033[3m"
-				} else {
-					return s
+					return fmt.Sprintf("\033[%dm", value)
 				}
 			}
 

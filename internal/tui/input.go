@@ -78,12 +78,12 @@ func isPipe() bool {
 
 func (p *Prompter) msg() string {
 	msg := strings.Builder{}
-	msg.WriteString("<green>" + p.Message)
+	msg.WriteString("<bold><green>" + p.Message)
 	if len(p.Choices) > 0 {
-		msg.WriteString(fmt.Sprintf(" <blue>(%s)", strings.Join(p.Choices, "/")))
+		msg.WriteString(fmt.Sprintf("<reset> <blue>(%s)", strings.Join(p.Choices, "/")))
 	}
 	if p.Default != "" {
-		msg.WriteString(fmt.Sprintf(" <magenta>[%s]", p.Default))
+		msg.WriteString(fmt.Sprintf(" <purple>[%s]", p.Default))
 	}
 
 	msg.WriteString("<green>:</> ")
@@ -93,18 +93,18 @@ func (p *Prompter) msg() string {
 
 func (p *Prompter) errorMsg() string {
 	if p.Regexp != nil {
-		return fmt.Sprintf("<red>!! No coincide con /%s/</>", p.Regexp)
+		return fmt.Sprintf("<bold><red>!! No coincide con /%s/</>", p.Regexp)
 	}
 	if len(p.Choices) > 0 {
 		if len(p.Choices) == 1 {
-			return fmt.Sprintf("<red>!! Sólo puedes seleccionar `%s`</>", p.Choices[0])
+			return fmt.Sprintf("<bold><red>!! Sólo puedes seleccionar `%s`</>", p.Choices[0])
 		}
 		choices := make([]string, len(p.Choices)-1)
 		for i, v := range p.Choices[:len(p.Choices)-1] {
 			choices[i] = "`" + v + "`"
 		}
 		return fmt.Sprintf(
-			"<red>!! Sólo puedes ingresar <bold>%s</><red> o <bold>`%s`</>",
+			"<bold><red>!! Sólo puedes ingresar <bold>%s</><red> o <bold>`%s`</>",
 			strings.Join(choices, ", "),
 			p.Choices[len(p.Choices)-1],
 		)

@@ -88,7 +88,7 @@ func Time2Esp(t time.Time) string {
 // Replace reemplaza las claves `@Key` por sus valores en el string "s"
 func Replace(s string, data map[string]string) string {
 	for k, v := range data {
-		s = strings.ReplaceAll(s, k, v)
+		s = strings.ReplaceAll(s, "@"+k, v)
 	}
 
 	return s

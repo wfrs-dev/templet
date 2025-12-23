@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	"gitlab.com/wfrsgo/templet/internal/tui"
 	"gitlab.com/wfrsgo/templet/internal/utils"
 )
 
@@ -16,6 +17,7 @@ type Project struct {
 	location string
 	baseDir  string
 	mapDest  map[string]string
+	dataVars map[string]string
 	tpl      *template.Template
 }
 
@@ -50,6 +52,10 @@ func (p *Project) Delete() {
 	os.RemoveAll(p.baseDir)
 }
 
+func (p *Project) AddData(m map[string]string) {
+	p.dataVars = m
+}
+
 func (p *Project) Run(name string) error {
 	err := p.generate(name)
 	if err != nil {
@@ -76,6 +82,7 @@ func (p *Project) Init() error {
 	if len(elems) != 2 {
 		return fmt.Errorf("`%s` no es un repositorio con formato válido (tipo:grupo/nombre)", p.location)
 	}
+
 	if d, ok := p.mapDest[elems[0]]; ok {
 		return p.clone(fmt.Sprintf(d, elems[1]))
 	} else if elems[0] == "file" {
@@ -103,7 +110,12 @@ func (p *Project) copyDir(src, dst string, render ...bool) error {
 		return err
 	}
 
-	if err := os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+	var mdst string = dst
+	if len(render) > 0 && render[0] {
+		mdst = utils.Replace(dst, p.dataVars)
+	}
+
+	if err := os.MkdirAll(mdst, srcInfo.Mode()); err != nil {
 		return err
 	}
 
@@ -114,7 +126,7 @@ func (p *Project) copyDir(src, dst string, render ...bool) error {
 
 	for _, entry := range entries {
 		srcPath := src + "/" + entry.Name()
-		dstPath := dst + "/" + entry.Name()
+		dstPath := mdst + "/" + entry.Name()
 
 		if entry.IsDir() {
 			if err := p.copyDir(srcPath, dstPath, render...); err != nil {
@@ -134,11 +146,16 @@ func (p *Project) copyFile(src string, dst string, render ...bool) error {
 	canRender := len(render) > 0 && render[0] && strings.HasSuffix(src, ".tmpl")
 
 	var mdst string = dst
+	if len(render) > 0 && render[0] {
+		mdst = utils.Replace(dst, p.dataVars)
+	}
+
+	if len(render) > 0 && render[0] && strings.HasSuffix(src, "meta.hjson") {
+		return nil
+	}
+
 	if canRender {
-		mdst = replace(strings.Replace(dst, ".tmpl", "", 1), p.mapDest)
-		if strings.HasSuffix(src, "meta.hjson") {
-			return nil
-		}
+		mdst = strings.Replace(mdst, ".tmpl", "", 1)
 	}
 
 	srcFile, err := os.Open(src)
@@ -168,17 +185,14 @@ func (p *Project) copyFile(src string, dst string, render ...bool) error {
 			return err
 		}
 
-		err = t.ExecuteTemplate(dstFile, src, p.mapDest)
+		err = t.Execute(dstFile, p.dataVars)
 	} else {
 		_, err = io.Copy(dstFile, srcFile)
 	}
 
-	return err
-}
-
-func replace(s string, r map[string]string) string {
-	for k, v := range r {
-		s = strings.ReplaceAll(s, "@"+k, v)
+	if len(render) > 0 && render[0] {
+		fmt.Println(tui.Colorize("󱁻 Archivo `%s` creado", mdst))
 	}
-	return s
+
+	return err
 }

@@ -48,6 +48,7 @@ func main() {
 	exitErr(err)
 	_ = data
 
+	prj.AddData(data)
 	err = prj.Run(name)
 	exitErr(err)
 }
