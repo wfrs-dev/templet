@@ -3,11 +3,12 @@ version: '3'
 vars:
   BinName: tpl
   SrcMain: ./cmd/cli/main.go
-  Version: 0.1.0
   BuildTime: '{{now | date "2006-01-02T15:04:05"}}'
   DistDir: ./dist
   CommitHash:
-    sh: git rev-parse --short HEAD
+    sh: "git rev-parse --short HEAD"
+  Version:
+    sh: "git describe --tags --abbrev=0"
 
 tasks:
   default:
@@ -39,11 +40,11 @@ tasks:
       - |
         CGO_ENABLED=0 GOOS={{.GOOS}} GOARCH={{.GOARCH}} go build \
           -o ./dist/{{.GOOS}}-{{.GOARCH}}/{{.BinName}}{{.Ext}} \
-          -ldflags "-s -w -X main.Version={{.Version}} -X main.BuildTime={{.BuildTime}} -X main.CommitHash={{.CommitHash}}" \
-          main.go
+          -ldflags "-s -w -X main.Version={{.Version}}" \
+          {{.SrcMain}}
   build-linux:
     desc: "Genera el binario ejecutable para Linux"
-    deps: [clean, audit, gendoc]
+    deps: [clean, audit]
     cmds:
       - task: build
         vars: {GOOS: linux, GOARCH: amd64, Ext: ""}

@@ -12,6 +12,8 @@ import (
 	"gitlab.com/wfrsgo/templet/internal/utils"
 )
 
+var Version = "devel"
+
 func main() {
 	var name string
 	var source string
@@ -22,6 +24,7 @@ func main() {
 
 	flaggy.AddPositionalValue(&source, "source", 1, true, "nombre de la plantilla a usar en formato `grupo/nombre`")
 	flaggy.ShowHelpOnUnexpectedDisable()
+	flaggy.SetVersion(Version)
 
 	flaggy.Parse()
 
