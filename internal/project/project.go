@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -56,11 +55,13 @@ func (p *Project) AddData(m map[string]string) {
 	p.dataVars = m
 }
 
-func (p *Project) Run(name string) error {
+func (p *Project) Run(name string, cmds Commands) error {
 	err := p.generate(name)
 	if err != nil {
 		return err
 	}
+
+	err = p.comandos(name, cmds)
 
 	return nil
 }
@@ -72,6 +73,17 @@ func (p *Project) generate(name string) error {
 	err := p.copyDir(p.baseDir, dst, true)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (p *Project) comandos(name string, cmds Commands, cwd ...string) error {
+	for _, cmd := range cmds {
+		fmt.Println(tui.Colorize("<purple>󱆃 Ejecutando comando `%s`</>", cmd))
+		if err := utils.Execute(name, "sh", "-c", cmd); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -93,14 +105,10 @@ func (p *Project) Init() error {
 }
 
 func (p *Project) clone(url string) error {
-	cmd := exec.Command("git", "clone", url, p.baseDir)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
-	if err != nil {
+	if err := utils.Execute("", "git", "clone", url, p.baseDir); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -191,7 +199,7 @@ func (p *Project) copyFile(src string, dst string, render ...bool) error {
 	}
 
 	if len(render) > 0 && render[0] {
-		fmt.Println(tui.Colorize("󱁻 Archivo `%s` creado", mdst))
+		fmt.Println(tui.Colorize("<blue>󱁻 Archivo `%s` creado</>", mdst))
 	}
 
 	return err

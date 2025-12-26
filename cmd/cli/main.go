@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/integrii/flaggy"
 	"gitlab.com/wfrsgo/templet/internal/project"
+	"gitlab.com/wfrsgo/templet/internal/tui"
 	"gitlab.com/wfrsgo/templet/internal/utils"
 )
 
@@ -49,8 +52,14 @@ func main() {
 	_ = data
 
 	prj.AddData(data)
-	err = prj.Run(name)
+	err = prj.Run(name, meta.Comandos)
 	exitErr(err)
+
+	fmt.Println(
+		tui.Colorize(
+			fmt.Sprintf("<green>✔ Proyecto creado con éxito a las %s</>\n", time.Now().Format("01/02/2006 03:04:05 PM")),
+		),
+	)
 }
 
 func exit(msg string) {

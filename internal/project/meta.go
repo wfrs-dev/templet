@@ -15,11 +15,13 @@ type Variable struct {
 }
 
 type Variables []Variable
+type Commands []string
 
 type Meta struct {
 	Nombre      string    `json:"nombre"`
 	Descripcion string    `json:"descripcion"`
 	Variables   Variables `json:"variables"`
+	Comandos    Commands  `json:"comandos"`
 }
 
 func ReadMeta(path string) (*Meta, error) {

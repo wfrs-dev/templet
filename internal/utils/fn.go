@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/md5"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"runtime"
@@ -146,4 +147,29 @@ func isWSL() bool {
 		return false
 	}
 	return strings.Contains(strings.ToLower(string(releaseData)), "microsoft")
+}
+
+// Execute ejecuta un comando en la terminal
+func Execute(dir, com string, args ...string) error {
+	cmd := exec.Command(com, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if dir != "" && dir != "." {
+		cmd.Dir = dir
+	}
+	exitCode := 0
+
+	err := cmd.Run()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			// no hay codigo de salida, pero devuelve error
+			exitCode = -1
+		}
+
+		err = fmt.Errorf("error al ejecutar `%s`(%d): %w", com, exitCode, err)
+	}
+
+	return err
 }
