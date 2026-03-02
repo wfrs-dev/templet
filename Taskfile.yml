@@ -1,40 +1,35 @@
 version: '3'
 
 vars:
-  BinName: tpl
+  BinName: templet
   SrcMain: ./cmd/cli/main.go
-  BuildTime: '{{now | date "2006-01-02T15:04:05"}}'
   DistDir: ./dist
-  CommitHash:
-    sh: "git rev-parse --short HEAD"
-  Version:
-    sh: "git describe --tags --abbrev=0"
 
 tasks:
-  default:
-    desc: 'Muestra las tareas disponibles (task -l)'
-    cmds:
-      - task --list
   clean:
     desc: "Limpia archivos generados en la compilación"
     cmds:
     - rm -rf {{.DistDir}}/*
     - rm -rf /tmp/templet-*
   fmt:
-    # Instalarlo a través del comando `go install github.com/segmentio/golines@latest
     desc: 'Formatea el código fuente a traves del programa `golines'
     cmds:
-      - golines -m 130 --base-formatter="gofmt" -w .
+      - golines -m 130 --base-formatter="gopls" -w .
   audit:
     desc: 'Realiza comprobaciones de control de calidad en el código fuente'
-    # Habilitar si golines está instalado
-    # deps: [fmt]
+    deps: [fmt]
     cmds:
       - go vet ./...
       - go test ./...
       - go mod verify
   build:
     desc: 'Genera el binario ejecutable basándose en la configuración del sistema operativo'
+    vars:
+      CommitHash:
+        sh: "git rev-parse --short HEAD"
+      Version:
+        sh: "git describe --tags --abbrev=0"
+      BuildTime: '{{now | date "2006-01-02T15:04:05"}}'
     cmds:
       - mkdir -p ./dist
       - |
@@ -54,7 +49,3 @@ tasks:
     cmds:
       - task: build
         vars: {GOOS: windows, GOARCH: amd64, Ext: ".exe"}
-  run:
-    desc: "Ejecuta el programa a traves del comando `go run {{.SrcMain}}`"
-    cmds:
-      - go run {{.SrcMain}} -n /tmp/prueba  file:/home/walter/Desarrollo/go/templet/sample/clthexa
