@@ -15,12 +15,12 @@ import (
 type Project struct {
 	location string
 	baseDir  string
-	mapDest  map[string]string
+	dest     string
 	dataVars map[string]string
 	tpl      *template.Template
 }
 
-func New(location string, mdest map[string]string) (*Project, error) {
+func New(location, dest string) (*Project, error) {
 	var dir string
 	var err error
 	if d, ok := os.LookupEnv("TEMPLET_TMP"); ok {
@@ -35,10 +35,11 @@ func New(location string, mdest map[string]string) (*Project, error) {
 			return nil, err
 		}
 	}
+
 	return &Project{
 		location: location,
 		baseDir:  dir,
-		mapDest:  mdest,
+		dest:     dest,
 		tpl:      utils.NewTemplate(),
 	}, nil
 }
@@ -61,9 +62,7 @@ func (p *Project) Run(name string, cmds Commands) error {
 		return err
 	}
 
-	err = p.comandos(name, cmds)
-
-	return nil
+	return p.comandos(name, cmds)
 }
 
 func (p *Project) generate(name string) error {
@@ -78,7 +77,7 @@ func (p *Project) generate(name string) error {
 	return nil
 }
 
-func (p *Project) comandos(name string, cmds Commands, cwd ...string) error {
+func (p *Project) comandos(name string, cmds Commands) error {
 	for _, cmd := range cmds {
 		fmt.Println(tui.Colorize("<purple>󱆃 Ejecutando comando `%s`</>", cmd))
 		if err := utils.Execute(name, "sh", "-c", cmd); err != nil {
@@ -95,8 +94,8 @@ func (p *Project) Init() error {
 		return fmt.Errorf("`%s` no es un repositorio con formato válido (tipo:grupo/nombre)", p.location)
 	}
 
-	if d, ok := p.mapDest[elems[0]]; ok {
-		return p.clone(fmt.Sprintf(d, elems[1]))
+	if elems[0] == "git" && p.dest != "" {
+		return p.clone(elems[1])
 	} else if elems[0] == "file" {
 		return p.copyDir(elems[1], p.baseDir)
 	} else {
@@ -104,7 +103,8 @@ func (p *Project) Init() error {
 	}
 }
 
-func (p *Project) clone(url string) error {
+func (p *Project) clone(loc string) error {
+	url := fmt.Sprintf("http://%s/%s.git", p.dest, loc)
 	if err := utils.Execute("", "git", "clone", url, p.baseDir); err != nil {
 		return err
 	}
@@ -113,6 +113,10 @@ func (p *Project) clone(url string) error {
 }
 
 func (p *Project) copyDir(src, dst string, render ...bool) error {
+	if strings.Contains(src, ".git") {
+		return nil
+	}
+
 	srcInfo, err := os.Stat(src)
 	if err != nil {
 		return err
@@ -194,6 +198,9 @@ func (p *Project) copyFile(src string, dst string, render ...bool) error {
 		}
 
 		err = t.Execute(dstFile, p.dataVars)
+		if err != nil {
+			return err
+		}
 	} else {
 		_, err = io.Copy(dstFile, srcFile)
 	}
