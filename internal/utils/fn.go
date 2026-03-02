@@ -173,3 +173,18 @@ func Execute(dir, com string, args ...string) error {
 
 	return err
 }
+
+func Pluralize(name string) string {
+	lower := strings.ToLower(name)
+
+	if strings.HasSuffix(lower, "z") {
+		return name[:len(name)-1] + "ces"
+	}
+
+	last := lower[len(lower)-1]
+	if strings.ContainsRune("aeiou", rune(last)) {
+		return name + "s"
+	}
+
+	return name + "es"
+}

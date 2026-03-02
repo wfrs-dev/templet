@@ -13,7 +13,8 @@ var funcs = template.FuncMap{
 		}
 		return s
 	},
-	"md5": Md5,
+	"md5":       Md5,
+	"pluralize": Pluralize,
 }
 
 func NewTemplate() *template.Template {
