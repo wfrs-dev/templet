@@ -7,9 +7,9 @@ build:
   image: golang:1.25
   script:
     - mkdir dist
-    - GOOS=linux GOARCH=amd64 go build -o dist/templet-linux-amd64 -ldflags "-s -w" cmd/cli
-    - GOOS=windows GOARCH=amd64 go build -o dist/templet-windows-amd64.exe -ldflags "-s -w" cmd/cli
-    - GOOS=darwin GOARCH=amd64 go build -o dist/templet-darwin-amd64 -ldflags "-s -w" cmd/cli
+    - GOOS=linux GOARCH=amd64 go build -o dist/templet-linux-amd64 -ldflags "-s -w" ./cmd/cli/main.go
+    - GOOS=windows GOARCH=amd64 go build -o dist/templet-windows-amd64.exe -ldflags "-s -w" ./cmd/cli/main.go
+    - GOOS=darwin GOARCH=amd64 go build -o dist/templet-darwin-amd64 -ldflags "-s -w" ./cmd/cli/main.go
   artifacts:
     paths:
       - dist/
