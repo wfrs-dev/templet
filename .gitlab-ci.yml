@@ -1,0 +1,35 @@
+stages:
+  - build
+  - release
+
+build:
+  stage: build
+  image: golang:1.25
+  script:
+    - mkdir dist
+    - GOOS=linux GOARCH=amd64 go build -o dist/templet-linux-amd64 -ldflags "-s -w"
+    - GOOS=windows GOARCH=amd64 go build -o dist/templet-windows-amd64.exe -ldflags "-s -w"
+    - GOOS=darwin GOARCH=amd64 go build -o dist/templet-darwin-amd64 -ldflags "-s -w"
+  artifacts:
+    paths:
+      - dist/
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - echo "Creating release"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "Release $CI_COMMIT_TAG"
+    description: "Release $CI_COMMIT_TAG"
+    assets:
+      links:
+        - name: "Linux binary"
+          url: "$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/raw/dist/templet-linux-amd64"
+        - name: "Windows binary"
+          url: "$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/raw/dist/templet-windows-amd64.exe"
+        - name: "Mac binary"
+          url: "$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/raw/dist/templet-darwin-amd64"
+  rules:
+    - if: $CI_COMMIT_TAG
