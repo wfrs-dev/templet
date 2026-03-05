@@ -9,19 +9,14 @@ tasks:
   clean:
     desc: "Limpia archivos generados en la compilación"
     cmds:
-    - rm -rf {{.DistDir}}/*
-    - rm -rf /tmp/templet-*
-  fmt:
-    desc: 'Formatea el código fuente a traves del programa `golines'
-    cmds:
-      - golines -m 130 --base-formatter="gopls" -w .
+    - sh -c 'rm -rf {{.DistDir}}/*'
   audit:
     desc: 'Realiza comprobaciones de control de calidad en el código fuente'
-    deps: [fmt]
     cmds:
       - go vet ./...
       - go test ./...
       - go mod verify
+      - go mod tidy
   build:
     desc: 'Genera el binario ejecutable basándose en la configuración del sistema operativo'
     vars:
