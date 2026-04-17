@@ -18,16 +18,10 @@ build:
     - mkdir -p dist
 
     # Linux amd64
-    - GOOS=linux GOARCH=amd64 go build \
-        -ldflags="-s -w -X 'main.Version=$CI_COMMIT_TAG'" \
-        -o dist/templet-linux-amd64 \
-        ./cmd/cli/main.go
+    - GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X 'main.Version=$CI_COMMIT_TAG'" -o dist/templet-linux-amd64 ./cmd/cli/main.go
 
     # Windows amd64
-    - GOOS=windows GOARCH=amd64 go build \
-        -ldflags="-s -w -X 'main.Version=$CI_COMMIT_TAG'" \
-        -o dist/templet-windows-amd64.exe \
-        ./cmd/cli/main.go
+    - GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X 'main.Version=$CI_COMMIT_TAG'" -o dist/templet-windows-amd64.exe ./cmd/cli/main.go
 
   artifacts:
     paths:
