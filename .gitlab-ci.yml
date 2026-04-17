@@ -20,13 +20,13 @@ build:
     # Linux amd64
     - GOOS=linux GOARCH=amd64 go build \
         -ldflags="-s -w -X 'main.Version=$CI_COMMIT_TAG'" \
-        -o dist/${APP_NAME}-linux-amd64 \
+        -o dist/templet-linux-amd64 \
         ./cmd/cli/main.go
 
     # Windows amd64
     - GOOS=windows GOARCH=amd64 go build \
         -ldflags="-s -w -X 'main.Version=$CI_COMMIT_TAG'" \
-        -o dist/${APP_NAME}-windows-amd64.exe \
+        -o dist/templet-windows-amd64.exe \
         ./cmd/cli/main.go
 
   artifacts:
@@ -51,8 +51,8 @@ package:
     - cd dist
 
     # empaquetar binarios
-    - tar -czf ${APP_NAME}-linux-amd64.tar.gz ${APP_NAME}-linux-amd64
-    - zip ${APP_NAME}-windows-amd64.zip ${APP_NAME}-windows-amd64.exe
+    - tar -czf templet-linux-amd64.tar.gz ${APP_NAME}-linux-amd64
+    - zip templet-windows-amd64.zip ${APP_NAME}-windows-amd64.exe
 
     # checksums
     - sha256sum * > checksums.txt
