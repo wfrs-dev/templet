@@ -1,35 +1,99 @@
 stages:
   - build
+  - package
   - release
 
+variables:
+  APP_NAME: "templet"
+
+# -----------------------
+# BUILD
+# -----------------------
 build:
   stage: build
-  image: golang:1.25
+  image: golang:1.22
+  rules:
+    - if: $CI_COMMIT_TAG
   script:
-    - mkdir dist
-    - GOOS=linux GOARCH=amd64 go build -o dist/templet-linux-amd64 -ldflags "-s -w" ./cmd/cli/main.go
-    - GOOS=windows GOARCH=amd64 go build -o dist/templet-windows-amd64.exe -ldflags "-s -w" ./cmd/cli/main.go
-    - GOOS=darwin GOARCH=amd64 go build -o dist/templet-darwin-amd64 -ldflags "-s -w" ./cmd/cli/main.go
+    - mkdir -p dist
+
+    # Linux amd64
+    - GOOS=linux GOARCH=amd64 go build \
+        -ldflags="-s -w -X main.version=$CI_COMMIT_TAG" \
+        -o dist/${APP_NAME}-linux-amd64 \
+        ./cmd/cli/main.go
+
+    # Windows amd64
+    - GOOS=windows GOARCH=amd64 go build \
+        -ldflags="-s -w -X main.version=$CI_COMMIT_TAG" \
+        -o dist/${APP_NAME}-windows-amd64.exe \
+        ./cmd/cli/main.go
+
   artifacts:
     paths:
       - dist/
+    expire_in: 1 day
 
+# -----------------------
+# PACKAGE
+# -----------------------
+package:
+  stage: package
+  image: alpine:latest
+  needs:
+    - job: build
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - apk add --no-cache zip tar
+
+    - cd dist
+
+    # empaquetar binarios
+    - tar -czf ${APP_NAME}-linux-amd64.tar.gz ${APP_NAME}-linux-amd64
+    - zip ${APP_NAME}-windows-amd64.zip ${APP_NAME}-windows-amd64.exe
+
+    # checksums
+    - sha256sum * > checksums.txt
+
+    - cd ..
+
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 day
+
+# -----------------------
+# RELEASE
+# -----------------------
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
-  script:
-    - echo "Creating release"
-  release:
-    tag_name: $CI_COMMIT_TAG
-    name: "Release $CI_COMMIT_TAG"
-    description: "Release $CI_COMMIT_TAG"
-    assets:
-      links:
-        - name: "Linux binary"
-          url: "$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/raw/dist/templet-linux-amd64"
-        - name: "Windows binary"
-          url: "$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/raw/dist/templet-windows-amd64.exe"
-        - name: "Mac binary"
-          url: "$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/raw/dist/templet-darwin-amd64"
+  needs:
+    - job: package
+      artifacts: true
   rules:
     - if: $CI_COMMIT_TAG
+  script:
+    - echo "Creating release $CI_COMMIT_TAG"
+
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "templet $CI_COMMIT_TAG"
+    description: |
+      Release automática de **templet**
+
+      ## Binarios
+      - Linux amd64 (.tar.gz)
+      - Windows amd64 (.zip)
+
+      ## Verificación
+      Usa:
+      sha256sum -c checksums.txt
+
+    assets:
+      paths:
+        - dist/*.tar.gz
+        - dist/*.zip
+        - dist/checksums.txt
