@@ -93,7 +93,10 @@ release:
       sha256sum -c checksums.txt
 
     assets:
-      paths:
-        - dist/*.tar.gz
-        - dist/*.zip
-        - dist/checksums.txt
+      links:
+        - name: "Linux amd64"
+          url: "$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/raw/dist/templet-linux-amd64.tar.gz"
+        - name: "Windows amd64"
+          url: "$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/raw/dist/templet-windows-amd64.zip"
+        - name: "Checksums"
+          url: "$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/raw/dist/checksums.txt"
