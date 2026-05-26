@@ -112,7 +112,3 @@ Usa `@` como prefijo para reemplazar nombres de archivos/directorios:
 @BinName/cmd/main.go  → mi-api/cmd/main.go
 config-@env.yaml      → config-production.yaml
 ```
-
-##  Autor
-
-- **Walter Fabián Rodríguez Salazar** - [GitLab](https://gitlab.com/wfrodriguez)
