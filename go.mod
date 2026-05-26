@@ -1,6 +1,6 @@
 module github.com/wfrs-dev/templet
 
-go 1.25
+go 1.25.7
 
 require (
 	github.com/hjson/hjson-go/v4 v4.5.0
