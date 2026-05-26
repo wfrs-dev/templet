@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/hjson/hjson-go/v4"
-	"gitlab.com/wfrsgo/templet/internal/tui"
+	"github.com/wfrs-dev/templet/internal/tui"
 )
 
 type Variable struct {

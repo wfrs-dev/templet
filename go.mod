@@ -1,4 +1,4 @@
-module gitlab.com/wfrsgo/templet
+module github.com/wfrs-dev/templet
 
 go 1.25
 

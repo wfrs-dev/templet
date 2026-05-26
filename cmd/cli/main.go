@@ -10,8 +10,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/integrii/flaggy"
-	"gitlab.com/wfrsgo/templet/internal/project"
-	"gitlab.com/wfrsgo/templet/internal/tui"
+	"github.com/wfrs-dev/templet/internal/project"
+	"github.com/wfrs-dev/templet/internal/tui"
 )
 
 var Version = "devel"

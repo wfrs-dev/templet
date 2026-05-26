@@ -8,8 +8,8 @@ import (
 	"strings"
 	"text/template"
 
-	"gitlab.com/wfrsgo/templet/internal/tui"
-	"gitlab.com/wfrsgo/templet/internal/utils"
+	"github.com/wfrs-dev/templet/internal/tui"
+	"github.com/wfrs-dev/templet/internal/utils"
 )
 
 type Project struct {
