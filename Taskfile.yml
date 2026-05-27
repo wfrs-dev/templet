@@ -6,10 +6,6 @@ vars:
   DistDir: ./dist
 
 tasks:
-  clean:
-    desc: "Limpia archivos generados en la compilación"
-    cmds:
-    - sh -c 'rm -rf {{.DistDir}}/*'
   audit:
     desc: 'Realiza comprobaciones de control de calidad en el código fuente'
     cmds:
@@ -20,13 +16,11 @@ tasks:
   build:
     desc: 'Genera el binario ejecutable basándose en la configuración del sistema operativo'
     vars:
-      CommitHash:
-        sh: "git rev-parse --short HEAD"
       Version:
         sh: "git describe --tags --abbrev=0"
-      BuildTime: '{{now | date "2006-01-02T15:04:05"}}'
     cmds:
       - mkdir -p ./dist
+      - rm -rf ./dist/{{.GOOS}}-{{.GOARCH}}/*
       - |
         CGO_ENABLED=0 GOOS={{.GOOS}} GOARCH={{.GOARCH}} go build \
           -o ./dist/{{.GOOS}}-{{.GOARCH}}/{{.BinName}}{{.Ext}} \
@@ -34,13 +28,13 @@ tasks:
           {{.SrcMain}}
   build-linux:
     desc: "Genera el binario ejecutable para Linux"
-    deps: [clean, audit]
+    deps: [audit]
     cmds:
       - task: build
         vars: {GOOS: linux, GOARCH: amd64, Ext: ""}
   build-windows:
     desc: "Genera el binario ejecutable para Windows"
-    deps: [clean, audit]
+    deps: [audit]
     cmds:
       - task: build
         vars: {GOOS: windows, GOARCH: amd64, Ext: ".exe"}
