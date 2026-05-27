@@ -24,9 +24,9 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           LDFLAGS="-s -w -X main.version=${VERSION}"
           # Compilar Linux
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o templet-linux-amd64
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o templet-linux-amd64 cmd/cli/main.go
           # Compilar Windows
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="$LDFLAGS" -o templet-windows-amd64.exe
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="$LDFLAGS" -o templet-windows-amd64.exe cmd/cli/main.go
 
       - name: Crear Release en GitHub
         uses: softprops/action-gh-release@v2
