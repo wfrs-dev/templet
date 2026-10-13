@@ -2,7 +2,7 @@
 ext := if os_family() == "windows" { ".exe" } else { "" }
 bin := "templet" + ext
 dirDist := "./dist/" + os_family()
-version := shell("git describe --tags --abbrev=0 || echo 'v0.0.0'")
+version := shell("git describe --tags --abbrev=0 2>/dev/null || echo 'v0.0.0'")
 
 # Realiza comprobaciones de control de calidad en el código fuente
 check:
