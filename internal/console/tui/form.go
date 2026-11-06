@@ -6,41 +6,20 @@ import (
 	"os"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
-	"github.com/charmbracelet/colorprofile"
 )
-
-type Item struct {
-	Label  string
-	Value  string
-	Active bool
-}
-
-type Items []Item
 
 // monochromeTheme define un tema en blanco y negro puro, compatible con
 // cualquier terminal TTY (ver Monochrome).
 func monochromeTheme(isDark bool) *huh.Styles {
-	return NewMonochrome(isDark || TTYMode()).Styles()
+	return NewMonochrome(isDark).Styles()
 }
 
 var theme = huh.ThemeFunc(monochromeTheme)
 
-// run ejecuta un campo dentro de un formulario. En modo TTY fuerza el perfil
-// de color ANSI (4 bits) para que la salida sea valida en terminales sin
-// entorno grafico.
+// run ejecuta un campo dentro de un formulario.
 func run(field huh.Field) error {
-	form := huh.NewForm(huh.NewGroup(field)).WithShowHelp(true)
-
-	if TTYMode() {
-		form = form.WithProgramOptions(
-			tea.WithOutput(os.Stderr),
-			tea.WithColorProfile(colorprofile.ANSI),
-		)
-	}
-
-	return form.Run()
+	return huh.NewForm(huh.NewGroup(field)).WithShowHelp(true).Run()
 }
 
 func handleErr(err error) {
@@ -49,57 +28,6 @@ func handleErr(err error) {
 		os.Exit(0)
 	}
 	fmt.Println(err)
-}
-
-func Select(slabel string, items Items) string {
-	var input string
-
-	hopts := make([]huh.Option[string], len(items))
-	for i, opt := range items {
-		hopts[i] = huh.NewOption(opt.Label, opt.Value).Selected(opt.Active)
-	}
-	field := huh.NewSelect[string]().
-		Title(slabel).
-		Value(&input).
-		Options(hopts...).
-		Validate(func(s string) error {
-			if strings.TrimSpace(s) == "" {
-				return errors.New("no option selected")
-			}
-			return nil
-		}).
-		WithTheme(theme)
-	err := run(field)
-	if err != nil {
-		handleErr(err)
-		return ""
-	}
-
-	return strings.TrimSpace(input)
-}
-
-func MultiSelect(slabel string, items Items) []string {
-	var input []string
-
-	hopts := make([]huh.Option[string], len(items))
-	for i, opt := range items {
-		hopts[i] = huh.NewOption(opt.Label, opt.Value).Selected(opt.Active)
-	}
-
-	field := huh.NewMultiSelect[string]().
-		Title(slabel).
-		Description("↑ Up 🞄 ↓ Down 🞄 / Search mode 🞄 ⏎  Show Search items/Submit 🞄 ␣ Select item 🞄 Esc Exit search mode").
-		Value(&input).
-		Options(hopts...).
-		WithHeight(10).
-		WithTheme(theme)
-	err := run(field)
-	if err != nil {
-		handleErr(err)
-		return []string{}
-	}
-
-	return input
 }
 
 func Input(label, defval string, validations ...func(string) error) string {
@@ -134,12 +62,4 @@ func Input(label, defval string, validations ...func(string) error) string {
 		return ""
 	}
 	return strings.TrimSpace(input)
-}
-
-func Confirm(msg string) bool {
-	fmt.Print(Colorize("<bold>%s</>(y/N): ", msg))
-	var char rune
-	fmt.Scanf("%c", &char)
-
-	return char == 'y' || char == 'Y' || char == 's' || char == 'S'
 }

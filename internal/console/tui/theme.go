@@ -2,26 +2,10 @@ package tui
 
 import (
 	"image/color"
-	"sync/atomic"
 
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
 )
-
-// ttyMode indica si se fuerza el modo TTY (perfil ANSI de 4 bits).
-var ttyMode atomic.Bool
-
-// SetTTYMode activa o desactiva el modo TTY. En modo TTY los formularios se
-// renderizan forzando el perfil ANSI de 4 bits, evitando secuencias de color
-// extendido que una terminal sin entorno grafico no puede representar.
-func SetTTYMode(enabled bool) {
-	ttyMode.Store(enabled)
-}
-
-// TTYMode informa si el modo TTY esta activo.
-func TTYMode() bool {
-	return ttyMode.Load()
-}
 
 // Monochrome es la paleta monocromatica de goretro.
 //

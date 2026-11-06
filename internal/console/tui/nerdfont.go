@@ -9,20 +9,15 @@ de los iconos y pasarlos a PascalCase:
 nf-md-tune_vertical_variant -> MdTuneVerticalVariant
 */
 
-var enableNF bool = true
-
-func DisableNF() {
-	enableNF = false
-}
-
-// Nerdfont retorna un string con el icono de la fuente nerdfont asociado al nombre
+// Nerdfont retorna el icono de la fuente nerdfont asociado al nombre. Si el
+// nombre no existe, retorna el primer valor de cdef (el reemplazo ASCII).
 func Nerdfont(name string, cdef ...string) string {
 	if f, ok := fontMap[name]; ok {
-		if enableNF {
-			return f
-		} else if len(cdef) > 0 {
-			return cdef[1]
-		}
+		return f
+	}
+
+	if len(cdef) > 0 {
+		return cdef[0]
 	}
 
 	return ""
