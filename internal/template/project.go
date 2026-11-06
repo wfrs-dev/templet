@@ -1,7 +1,6 @@
 package template
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,38 +37,75 @@ func (p *Project) Generate() error {
 
 func (p *Project) GenerateFile(file File) error {
 	spath := p.generator.Load(file.Path).RenderString(p.Variables)
-	fmt.Println(tui.Colorize("<blue+italic>%s Generate file `%s`</>", tui.Nerdfont("MdFileCog", "> "), spath))
-	if p.generator.Error() != nil {
-		return fmt.Errorf("couldn't generate file %s: %w", file.Path, p.generator.Error())
+	if err := p.generator.Error(); err != nil {
+		return fmt.Errorf("couldn't render path of %s: %w", file.Path, err)
 	}
 
-	destDir := filepath.Join(p.Destination, filepath.Dir(spath))
-	os.MkdirAll(destDir, 0755)
-	var buf bytes.Buffer
-	if len(file.Replaces) > 0 {
-		str := p.generator.Load(file.Content).RenderString(p.Variables)
-		for _, replace := range file.Replaces {
-			fmt.Println(
-				tui.Colorize(
-					"    <purple>%s Reemplazo:</> <yellow>%s</> <purple>%s</> <yellow>%s</>",
-					tui.Nerdfont("CodReplace", "-"),
-					replace.Replace,
-					tui.Nerdfont("MdArrowRight", "->"),
-					replace.Text,
-				),
-			)
-			str = strings.ReplaceAll(str, replace.Text, replace.Replace)
-		}
-		buf.WriteString(str)
-	} else {
-		buf = p.generator.Load(file.Content).Render(p.Variables)
+	content, err := p.renderContent(file)
+	if err != nil {
+		return err
 	}
 
 	dest := filepath.Join(p.Destination, spath)
-	err := os.WriteFile(dest, buf.Bytes(), 0644)
-	if err != nil {
+	if err := writeFile(dest, content); err != nil {
 		return fmt.Errorf("couldn't write file %s: %w", spath, err)
 	}
 
+	fmt.Println(tui.Colorize("<blue+italic>%s Generate file `%s`</>", tui.Nerdfont("MdFileCog", "> "), spath))
+
 	return nil
+}
+
+// renderContent renders the file content and applies its literal replacements.
+// It never returns partially rendered content alongside an error.
+func (p *Project) renderContent(file File) ([]byte, error) {
+	str := p.generator.Load(file.Content).RenderString(p.Variables)
+	if err := p.generator.Error(); err != nil {
+		return nil, fmt.Errorf("couldn't render content of %s: %w", file.Path, err)
+	}
+
+	for _, replace := range file.Replaces {
+		fmt.Println(
+			tui.Colorize(
+				"    <purple>%s Reemplazo:</> <yellow>%s</> <purple>%s</> <yellow>%s</>",
+				tui.Nerdfont("CodReplace", "-"),
+				replace.Replace,
+				tui.Nerdfont("MdArrowRight", "->"),
+				replace.Text,
+			),
+		)
+		str = strings.ReplaceAll(str, replace.Text, replace.Replace)
+	}
+
+	return []byte(str), nil
+}
+
+// writeFile writes content to dest through a temporary file in the same
+// directory, so a failing write never leaves a truncated or empty file behind.
+func writeFile(dest string, content []byte) error {
+	dir := filepath.Dir(dest)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+
+	tmp, err := os.CreateTemp(dir, ".templet-*")
+	if err != nil {
+		return err
+	}
+
+	tmpName := tmp.Name()
+	defer func() { _ = os.Remove(tmpName) }()
+
+	if _, err := tmp.Write(content); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmpName, 0o644); err != nil {
+		return err
+	}
+
+	return os.Rename(tmpName, dest)
 }

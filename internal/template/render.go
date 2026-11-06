@@ -20,6 +20,10 @@ func NewGenerator() *StringGenerator {
 }
 
 func (g *StringGenerator) Load(content string) *StringGenerator {
+	// Every load starts a new operation: an error from a previous one must not
+	// be reported for this one.
+	g.last = nil
+
 	_, err := g.tpl.Parse(content)
 	if err != nil {
 		g.last = err
@@ -31,6 +35,11 @@ func (g *StringGenerator) Load(content string) *StringGenerator {
 
 func (g *StringGenerator) Render(data map[string]any, replaces ...Replace) bytes.Buffer {
 	var buf bytes.Buffer
+
+	// A failed Load must not be masked by the execution that follows it.
+	if g.last != nil {
+		return buf
+	}
 
 	err := g.tpl.Execute(&buf, data)
 	if err != nil {
