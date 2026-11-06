@@ -165,8 +165,13 @@ Además de todo lo de `text/template`, en `path`, `content` y `when`:
 | `repeat` | `{{ repeat "=" 10 }}` | `==========` |
 | `replace` | `{{ replace .Name "_" "-" }}` | `mi-proyecto` |
 
-`slug` pasa a minúsculas, convierte espacios en `-`, quita acentos latinos y
-elimina todo lo que no sea letra, dígito, `-`, `/` o `.`.
+`slug` pasa a minúsculas, convierte espacios y `-` en un separador `-`,
+pliega los acentos latinos (`Café` → `cafe`, `Straße` → `strasse`) y
+translitera griego y cirílico (`Αθήνα` → `athina`, `Щука` → `shchuka`). Conserva
+`-`, `/` y `.`, y descarta todo lo demás (incluido `_`). Después colapsa las
+corridas de `-` y recorta las de los extremos. Si no sobrevive nada ASCII, el
+resultado es un string vacío: con nombres solo en CJK (`日本語`) no cuenta con
+`slug`, usá otro criterio para esos nombres.
 
 ## Cómo escribe los archivos
 
