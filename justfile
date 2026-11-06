@@ -7,7 +7,8 @@ ldflags := "-s -w -X main.Version=" + version
 
 # Realiza comprobaciones de control de calidad en el código fuente
 check:
-    go mod tidy
+    @if [ -n "$(gofmt -l .)" ]; then echo "archivos sin formatear (corré gofmt -w):"; gofmt -l .; exit 1; fi
+    go mod tidy -diff
     go vet ./...
     go test ./...
     golangci-lint run ./...
