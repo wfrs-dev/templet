@@ -2,7 +2,6 @@ package template
 
 import (
 	"bytes"
-	"strings"
 	"text/template"
 )
 
@@ -38,15 +37,13 @@ func (g *StringGenerator) Render(data map[string]any, replaces ...Replace) bytes
 		g.last = err
 	}
 
-	if len(replaces) > 0 {
-		str := buf.String()
-		for _, r := range replaces {
-			str = strings.ReplaceAll(str, r.Text, r.Replacer)
-		}
-		buf = *bytes.NewBufferString(str)
-	}
-
 	return buf
+}
+
+func (g *StringGenerator) RenderString(data map[string]any, replaces ...Replace) string {
+	buf := g.Render(data, replaces...)
+
+	return buf.String()
 }
 
 func (g *StringGenerator) Error() error {

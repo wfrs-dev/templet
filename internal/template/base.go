@@ -7,8 +7,8 @@ import (
 )
 
 type Replace struct {
-	Text     string
-	Replacer string
+	Text    string
+	Replace string
 }
 
 type File struct {

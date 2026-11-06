@@ -30,11 +30,11 @@ var (
 		{re: regexp.MustCompile(`[\xF1]`), ch: "n"},
 	}
 	spacereg       = regexp.MustCompile(`\s+`)
-	noncharreg     = regexp.MustCompile(`[^A-Za-z0-9\-/]`)
+	noncharreg     = regexp.MustCompile(`[^A-Za-z0-9\-/\.]`)
 	minusrepeatreg = regexp.MustCompile(`\-{2,}`)
 )
 
-func slugify(s string) string {
+func Slugify(s string) string {
 	for _, r := range rExps {
 		s = r.re.ReplaceAllString(s, r.ch)
 	}
@@ -56,7 +56,8 @@ func tplFunctions() systpl.FuncMap {
 		"contains":    strings.Contains,
 		"containsAny": strings.ContainsAny,
 		"repeat":      strings.Repeat,
+		"replace":     strings.ReplaceAll,
 
-		"slug": slugify,
+		"slug": Slugify,
 	}
 }

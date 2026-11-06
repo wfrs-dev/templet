@@ -1,11 +1,3 @@
-
-  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-                                 Dload  Upload  Total   Spent   Left   Speed
-
-  0      0   0      0   0      0      0      0                              0
-100   1314 100   1314   0      0   3214      0                              0
-100   1314 100   1314   0      0   3214      0                              0
-100   1314 100   1314   0      0   3214      0                              0
 # Created by https://www.toptal.com/developers/gitignore/api/linux,vim,go
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,vim,go
 
@@ -68,3 +60,6 @@ tags
 [._]*.un~
 
 # End of https://www.toptal.com/developers/gitignore/api/linux,vim,go
+
+# OTHERS
+testout/
