@@ -1,0 +1,189 @@
+# Plantilla de ejemplo de templet: un paquete Python minimo con CLI.
+#
+# templet es agnostico del lenguaje: emite archivos de texto en las rutas que
+# declares. Esta plantilla usa Python solo como demostracion, igual que
+# `sample-go.toml` usa Go.
+#
+# Campos opcionales de cada archivo:
+#   when   = plantilla que se evalua como booleano; si es falso, el archivo no
+#            se genera (y la generacion continua con el siguiente).
+#   delims = par de delimitadores propios del archivo. Necesario cuando el
+#            contenido debe contener llaves literales, por ejemplo las
+#            expresiones `${{ ... }}` de GitHub Actions. El par elegido aplica
+#            al `path`, al `when` Y al `content` de ese archivo.
+#   replaces = reemplazos literales aplicados al contenido ya renderizado.
+#   mode   = permisos del archivo en octal (por ejemplo "0755"). Si se omite,
+#            el archivo se escribe con 0644.
+
+variables = ["Name", "Description", "WithCI", "WithDocker"]
+
+# El proyecto vive en una carpeta con slug (`mi-proyecto`), pero el paquete
+# Python necesita un identificador valido: `replace (slug .Name) "-" "_"`
+# cambia los guiones por guiones bajos (`mi_proyecto`). Ojo con el orden: en
+# una pipeline `replace` recibe el valor al final, asi que se escribe anidado.
+[[files]]
+path = "{{ slug .Name }}/pyproject.toml"
+content = '''
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{{ slug .Name }}"
+description = "{{ .Description }}"
+readme = "README.md"
+requires-python = ">=3.9"
+version = "0.1.0"
+
+[project.scripts]
+{{ slug .Name }} = "{{ replace (slug .Name) "-" "_" }}:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+'''
+
+[[files]]
+path = '{{ slug .Name }}/src/{{ replace (slug .Name) "-" "_" }}/__init__.py'
+content = '''
+"""{{ .Description }}"""
+
+__all__ = ["main"]
+
+
+def main() -> None:
+    """Imprime la descripcion del proyecto."""
+    print("{{ .Description }}")
+'''
+
+# Permite `python -m paquete` delegando en la misma `main()`.
+[[files]]
+path = '{{ slug .Name }}/src/{{ replace (slug .Name) "-" "_" }}/__main__.py'
+content = '''
+from {{ replace (slug .Name) "-" "_" }} import main
+
+if __name__ == "__main__":
+    main()
+'''
+
+[[files]]
+path = '{{ slug .Name }}/tests/test_{{ replace (slug .Name) "-" "_" }}.py'
+content = '''
+import {{ replace (slug .Name) "-" "_" }} as pkg
+
+
+def test_package_exports_main() -> None:
+    assert "main" in pkg.__all__
+'''
+
+[[files]]
+path = "{{ slug .Name }}/README.md"
+content = '''
+# {{ .Name }}
+
+{{ .Description }}
+
+## Uso
+
+```sh
+{{ slug .Name }}
+```
+
+o sin instalar el paquete:
+
+```sh
+python -m {{ replace (slug .Name) "-" "_" }}
+```
+
+## Tests
+
+```sh
+./scripts/test.sh
+```
+'''
+
+[[files]]
+path = "{{ slug .Name }}/.gitignore"
+content = '''
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.coverage
+'''
+
+# Ejemplo de archivo ejecutable: `mode` es un literal octal opcional.
+[[files]]
+path = "{{ slug .Name }}/scripts/test.sh"
+mode = "0755"
+content = '''
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+python3 -m pytest tests
+'''
+
+# Solo se genera si WithCI es verdadero ("yes", "true", "1", "on", ...).
+# El path usa los delims del archivo (`[[ ]]`), no `{{ }}`, y `slug` sigue
+# disponible con ese par.
+[[files]]
+path = "[[ slug .Name ]]/.github/workflows/ci.yml"
+when = "[[ .WithCI ]]"
+delims = ["[[", "]]"]
+content = '''
+name: [[ .Name ]] CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12"]
+    concurrency:
+      group: ci-[[ slug .Name ]]-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache de pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+      - name: Instalar el paquete
+        run: python -m pip install -e .
+      - name: Test
+        run: python -m pytest tests
+'''
+
+# Solo se genera si WithDocker es verdadero. Ejemplo de `replaces`: el token
+# `@PYTHON_BASE_IMAGE@` se sustituye literalmente despues del render.
+[[files]]
+path = "{{ slug .Name }}/Dockerfile"
+when = "{{ .WithDocker }}"
+content = '''
+FROM @PYTHON_BASE_IMAGE@
+
+WORKDIR /app
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY tests ./tests
+COPY scripts ./scripts
+
+RUN python -m pip install --no-cache-dir .
+
+ENTRYPOINT ["{{ slug .Name }}"]
+'''
+
+[[files.replaces]]
+text = "@PYTHON_BASE_IMAGE@"
+replace = "python:3.12-slim"

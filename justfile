@@ -35,5 +35,6 @@ build:
     ls -lh {{dirDist}}/{{bin}}
 
 # Ejecuta el programa a traves del comando `go run`, generando en dist/sample para no ensuciar el repositorio
-run:
-    go run ./cmd/templet -dest {{dirDist}}/sample docs/sample.toml
+# El argumento opcional elige la plantilla: `just run docs/sample-python.toml`
+run template="docs/sample-go.toml":
+    go run ./cmd/templet -dest {{dirDist}}/sample {{template}}

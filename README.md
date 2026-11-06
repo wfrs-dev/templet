@@ -9,7 +9,7 @@ archivos de texto con su ruta y su contenido. No asume Go, ni Node, ni Python;
 sirve para cualquier proyecto hecho de archivos de texto.
 
 ```sh
-templet -dest ./salida -var Name=demo -var ModulePath=example.com/demo docs/sample.toml
+templet -dest ./salida -var Name=demo -var ModulePath=example.com/demo docs/sample-go.toml
 ```
 
 ## Instalación
@@ -173,6 +173,15 @@ corridas de `-` y recorta las de los extremos. Si no sobrevive nada ASCII, el
 resultado es un string vacío: con nombres solo en CJK (`日本語`) no cuenta con
 `slug`, usá otro criterio para esos nombres.
 
+**Ojo con las pipelines**: pasan el valor como **último** argumento. Para pasar
+de un nombre a un identificador de paquete hay que anidar la llamada, no
+encadenarla:
+
+```
+{{ replace (slug .Name) "-" "_" }}   # bien: hola-mundo -> hola_mundo
+{{ slug .Name | replace "-" "_" }}   # mal: el patrón queda en el lugar del valor
+```
+
 ## Cómo escribe los archivos
 
 - Crea los directorios intermedios que falten (`0755`).
@@ -192,23 +201,46 @@ resultado es un string vacío: con nombres solo en CJK (`日本語`) no cuenta c
 | `1` | Error de argumentos, de plantilla o de escritura |
 | `2` | Opción desconocida para el CLI |
 
-## Ejemplo completo
+## Ejemplos completos
 
-[`docs/sample.toml`](docs/sample.toml) genera un servicio Go mínimo y
+Hay dos plantillas de ejemplo, una por lenguaje, para mostrar que el generador
+no asume nada del proyecto que emite: la misma herramienta produce un servicio
+Go y un paquete Python a partir de dos listas de archivos.
+
+### Servicio Go
+
+[`docs/sample-go.toml`](docs/sample-go.toml) genera un servicio Go mínimo y
 compilable, con un workflow de CI opcional:
 
 ```sh
-templet -dest /tmp -var Name=demo -var ModulePath=example.com/demo -var WithCI=yes docs/sample.toml
+templet -dest /tmp -var Name=demo -var ModulePath=example.com/demo -var WithCI=yes docs/sample-go.toml
 ```
 
 Produce `README.md`, `go.mod`, `main.go`, `scripts/build.sh` (ejecutable) y
 `.github/workflows/ci.yml`, este último solo si `WithCI` es verdadero y
 conservando sus expresiones `${{ ... }}` de GitHub Actions literales.
 
+### Paquete Python
+
+[`docs/sample-python.toml`](docs/sample-python.toml) genera un paquete Python
+en `src/`, con `pyproject.toml`, tests de pytest, script de tests ejecutable y
+CI y `Dockerfile` opcionales:
+
+```sh
+templet -dest /tmp -var Name=demo -var Description="CLI de ejemplo" -var WithCI=yes -var WithDocker=no docs/sample-python.toml
+```
+
+Produce `demo/pyproject.toml` (PEP 621, con entry point de consola),
+`demo/src/demo/{__init__,__main__}.py`, `demo/tests/test_demo.py`,
+`demo/README.md`, `demo/.gitignore` y `demo/scripts/test.sh` (ejecutable). El
+workflow `demo/.github/workflows/ci.yml` aparece solo con `WithCI` verdadero y
+el `demo/Dockerfile` solo con `WithDocker` verdadero.
+
 ## Desarrollo
 
 ```sh
 just check     # go mod tidy, vet, tests, golangci-lint y go mod verify
 just build     # binario comprimido con upx en dist/<os>/
-just run       # ejecuta el sample generando en dist/<os>/sample
+just run       # ejecuta el sample Go generando en dist/<os>/sample
+just run template="docs/sample-python.toml"   # lo mismo con otra plantilla
 ```
