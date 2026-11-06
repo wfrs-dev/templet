@@ -17,6 +17,7 @@ type File struct {
 	Replaces []Replace
 	Delims   []string
 	When     string
+	Mode     string
 }
 
 type Template struct {

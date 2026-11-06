@@ -74,6 +74,7 @@ Cada entrada describe un archivo destino:
 | `content` | sí | Contenido del archivo. Es una plantilla |
 | `when` | no | Condición: si no es verdadera, el archivo no se genera |
 | `delims` | no | Par de delimitadores propio de este archivo |
+| `mode` | no | Permisos del archivo en octal, por ejemplo `"0755"`. Por defecto `0644` |
 | `[[files.replaces]]` | no | Reemplazos literales aplicados al contenido ya renderizado |
 
 ### `[[files.replaces]]`
@@ -116,6 +117,27 @@ steps:
 escriben con esos delimitadores. Si te equivocás, el error te dice cuáles
 estaban en efecto.
 
+## Permisos de archivo
+
+Cada archivo se escribe con permisos `0644` salvo que declares `mode`, un
+literal **octal** de permisos, entre `0000` y `0777`:
+
+```toml
+[[files]]
+path = "{{ .Name }}/scripts/build.sh"
+mode = "0755"                 # ejecutable
+content = '''
+#!/bin/sh
+set -eu
+go build -o bin/{{ .Name }} .
+'''
+```
+
+Un `mode` inválido (`"0999"`, `"755x"`, `"8888"`, `"4755"`) es un error que
+nombra el archivo, y no se escribe nada: la validación ocurre antes de tocar el
+disco. Los bits de setuid, setgid y sticky no se aceptan: una plantilla de
+proyecto no debería emitir archivos con privilegios elevados.
+
 ## Inclusión condicional
 
 `when` es una plantilla que se evalúa como booleano:
@@ -149,9 +171,11 @@ elimina todo lo que no sea letra, dígito, `-`, `/` o `.`.
 ## Cómo escribe los archivos
 
 - Crea los directorios intermedios que falten (`0755`).
+- Cada archivo se escribe con `mode` si lo declarás; si no, con `0644`.
 - Escribe cada archivo a través de un temporal y lo renombra: un fallo de
   escritura **nunca** deja un archivo vacío ni truncado, y no pisa el contenido
-  anterior si el render falla.
+  anterior si el render falla. Los permisos se aplican al temporal, así que
+  sobreviven al renombre.
 - Los reportes (`Generate file`, `Skip file`) van a **stdout**; los errores, a
   **stderr**.
 
@@ -172,9 +196,9 @@ compilable, con un workflow de CI opcional:
 templet -dest /tmp -var Name=demo -var ModulePath=example.com/demo -var WithCI=yes docs/sample.toml
 ```
 
-Produce `README.md`, `go.mod`, `main.go` y `.github/workflows/ci.yml`, este
-último solo si `WithCI` es verdadero y conservando sus expresiones
-`${{ ... }}` de GitHub Actions literales.
+Produce `README.md`, `go.mod`, `main.go`, `scripts/build.sh` (ejecutable) y
+`.github/workflows/ci.yml`, este último solo si `WithCI` es verdadero y
+conservando sus expresiones `${{ ... }}` de GitHub Actions literales.
 
 ## Desarrollo
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/wfrs-dev/templet/internal/console/tui"
@@ -41,6 +42,11 @@ func (p *Project) GenerateFile(file File) error {
 		return err
 	}
 
+	mode, err := p.modeFor(file)
+	if err != nil {
+		return err
+	}
+
 	enabled, err := p.whenEnabled(file, delims)
 	if err != nil {
 		return err
@@ -62,7 +68,7 @@ func (p *Project) GenerateFile(file File) error {
 	}
 
 	dest := filepath.Join(p.Destination, spath)
-	if err := writeFile(dest, content); err != nil {
+	if err := writeFile(dest, content, mode); err != nil {
 		return fmt.Errorf("couldn't write file %s: %w", spath, err)
 	}
 
@@ -86,6 +92,26 @@ func (p *Project) delimsFor(file File) ([]string, error) {
 	}
 
 	return delims, nil
+}
+
+// modeFor resolves the permission bits of a file. An absent mode keeps the
+// historical 0644 default; a declared one must be an octal permission literal
+// no wider than 07777. It is validated before any path rendering or disk
+// access, so an invalid mode writes nothing.
+func (p *Project) modeFor(file File) (os.FileMode, error) {
+	if file.Mode == "" {
+		return 0o644, nil
+	}
+
+	parsed, err := strconv.ParseUint(file.Mode, 8, 32)
+	// Only the nine permission bits are honoured: os.FileMode requires the
+	// setuid, setgid and sticky bits translated into its own constants, and a
+	// project template has no business emitting privileged files.
+	if err != nil || parsed > 0o777 {
+		return 0, fmt.Errorf("file %s: mode must be an octal permission literal such as \"0755\", got %q", file.Path, file.Mode)
+	}
+
+	return os.FileMode(parsed), nil
 }
 
 // whenEnabled reports whether the file must be generated. The when expression
@@ -148,7 +174,9 @@ func (p *Project) renderContent(file File, delims []string) ([]byte, error) {
 
 // writeFile writes content to dest through a temporary file in the same
 // directory, so a failing write never leaves a truncated or empty file behind.
-func writeFile(dest string, content []byte) error {
+// The permission bits are set on the temporary file before the rename, so they
+// survive it.
+func writeFile(dest string, content []byte, mode os.FileMode) error {
 	dir := filepath.Dir(dest)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
@@ -169,7 +197,7 @@ func writeFile(dest string, content []byte) error {
 	if err := tmp.Close(); err != nil {
 		return err
 	}
-	if err := os.Chmod(tmpName, 0o644); err != nil {
+	if err := os.Chmod(tmpName, mode); err != nil {
 		return err
 	}
 

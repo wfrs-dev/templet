@@ -11,6 +11,8 @@
 #            expresiones `${{ ... }}` de GitHub Actions. El par elegido aplica
 #            al `path` Y al `content` de ese archivo.
 #   replaces = reemplazos literales aplicados al contenido ya renderizado.
+#   mode   = permisos del archivo en octal (por ejemplo "0755"). Si se omite,
+#            el archivo se escribe con 0644.
 
 variables = ["Name", "ModulePath", "WithCI"]
 
@@ -46,6 +48,17 @@ import "fmt"
 func main() {
 	fmt.Println("{{ .Name }}")
 }
+'''
+
+# Ejemplo de archivo ejecutable: `mode` es un literal octal opcional.
+[[files]]
+path = "{{ .Name }}/scripts/build.sh"
+mode = "0755"
+content = '''
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+go build -o bin/{{ .Name }} .
 '''
 
 # Solo se genera si WithCI es verdadero ("yes", "true", "1", "on", ...).

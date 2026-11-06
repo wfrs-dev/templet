@@ -458,6 +458,132 @@ func TestGenerateRejectsInvalidWhen(t *testing.T) {
 	}
 }
 
+func TestGenerateWithMode(t *testing.T) {
+	tests := []struct {
+		name      string
+		file      File
+		variables map[string]any
+		wantPath  string
+		wantPerm  os.FileMode
+	}{
+		{
+			name:     "explicit 0755 is executable",
+			file:     File{Path: "scripts/build.sh", Content: "#!/bin/sh\n", Mode: "0755"},
+			wantPath: "scripts/build.sh",
+			wantPerm: 0o755,
+		},
+		{
+			name:     "explicit 0600 is private",
+			file:     File{Path: "secret.txt", Content: "token\n", Mode: "0600"},
+			wantPath: "secret.txt",
+			wantPerm: 0o600,
+		},
+		{
+			name:     "absent mode keeps the 0644 default",
+			file:     File{Path: "README.md", Content: "# demo\n"},
+			wantPath: "README.md",
+			wantPerm: 0o644,
+		},
+		{
+			name: "mode survives the temp file and rename path with delims and when",
+			file: File{
+				Path:    "scripts/build.sh",
+				Content: "#!/bin/sh\necho [[ .Name ]]\n",
+				Delims:  []string{"[[", "]]"},
+				When:    "[[ .WithScript ]]",
+				Mode:    "0755",
+			},
+			variables: map[string]any{"Name": "demo", "WithScript": "yes"},
+			wantPath:  "scripts/build.sh",
+			wantPerm:  0o755,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			tpl := &Template{Files: []File{tc.file}}
+
+			if err := NewProject(dir, tpl, tc.variables).Generate(); err != nil {
+				t.Fatalf("Generate() error = %v, want nil", err)
+			}
+
+			info, statErr := os.Stat(filepath.Join(dir, tc.wantPath))
+			if statErr != nil {
+				t.Fatalf("expected generated file %q: %v", tc.wantPath, statErr)
+			}
+			if got := info.Mode().Perm(); got != tc.wantPerm {
+				t.Fatalf("file %q permissions = %04o, want %04o", tc.wantPath, got, tc.wantPerm)
+			}
+		})
+	}
+}
+
+func TestGenerateRejectsInvalidMode(t *testing.T) {
+	tests := []struct {
+		name    string
+		mode    string
+		wantErr string
+	}{
+		{
+			name:    "trailing non octal digit",
+			mode:    "755x",
+			wantErr: `file scripts/build.sh: mode must be an octal permission literal such as "0755", got "755x"`,
+		},
+		{
+			name:    "9 is not an octal digit",
+			mode:    "0999",
+			wantErr: `file scripts/build.sh: mode must be an octal permission literal such as "0755", got "0999"`,
+		},
+		{
+			name:    "not a number",
+			mode:    "abc",
+			wantErr: `file scripts/build.sh: mode must be an octal permission literal such as "0755", got "abc"`,
+		},
+		{
+			name:    "above 0777",
+			mode:    "8888",
+			wantErr: `file scripts/build.sh: mode must be an octal permission literal such as "0755", got "8888"`,
+		},
+		{
+			name:    "setuid bit is not honoured",
+			mode:    "4755",
+			wantErr: `file scripts/build.sh: mode must be an octal permission literal such as "0755", got "4755"`,
+		},
+		{
+			name:    "sticky bit is not honoured",
+			mode:    "1000",
+			wantErr: `file scripts/build.sh: mode must be an octal permission literal such as "0755", got "1000"`,
+		},
+		{
+			name:    "above 07777",
+			mode:    "0177777",
+			wantErr: `file scripts/build.sh: mode must be an octal permission literal such as "0755", got "0177777"`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			tpl := &Template{Files: []File{
+				{Path: "scripts/build.sh", Content: "#!/bin/sh\n", Mode: tc.mode},
+			}}
+
+			err := NewProject(dir, tpl, map[string]any{}).Generate()
+			if err == nil {
+				t.Fatal("Generate() error = nil, want an invalid mode error")
+			}
+			if err.Error() != tc.wantErr {
+				t.Fatalf("Generate() error = %q, want %q", err, tc.wantErr)
+			}
+
+			if names := dirEntries(t, dir); len(names) != 0 {
+				t.Fatalf("an invalid mode must write nothing, found %v", names)
+			}
+		})
+	}
+}
+
 func TestGeneratorErrorDoesNotLeakAcrossLoads(t *testing.T) {
 	gen := NewGenerator()
 
