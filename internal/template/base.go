@@ -15,11 +15,14 @@ type File struct {
 	Path     string
 	Content  string
 	Replaces []Replace
+	Delims   []string
+	When     string
 }
 
 type Template struct {
 	Files     []File
 	Variables []string
+	Delims    []string
 }
 
 func Load(path string) (*Template, error) {
