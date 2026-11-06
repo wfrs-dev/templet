@@ -1,0 +1,118 @@
+# Sample Template project for Templet
+
+variables = ["Name", "ModuleName"]
+
+# Main file
+[[files]]
+path = "cmd/{{ .Name|slug }}/main.go"
+content = """
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/wfrs-dev/hefesto/app/config"
+	"github.com/wfrs-dev/hefesto/app/infra/server"
+)
+
+var Version = "0.0.0-dev"
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("No se ha especificado el archivo de configuración json")
+		os.Exit(1)
+	}
+
+	if os.Args[1] == "generate-config" {
+		err := config.GenerateDefaultConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Se ha generado el archivo de configuración `config/config.json`")
+		os.Exit(0)
+	}
+
+	fmt.Println("Cargando configuración desde", os.Args[1])
+	cfg, err := config.Load(os.Args[1])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	srv, err := server.New(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	registerModules(srv)
+
+	if err := srv.Start(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func registerModules(srv *server.Server) {
+	srv.AddModule(handler.New( /* ... */ ))
+	// ...
+}
+"""
+
+# Justfile
+[[files]]
+path = "justfile"
+content = """
+# Justfile para el proyecto {{ .Name }}
+ext := if os_family() == "windows" { ".exe" } else { "" }
+bin := "compendium" + ext
+dirDist := "./dist/" + os_family()
+version := shell("git describe --tags --abbrev=0 2>/dev/null || echo 'v0.0.0'")
+
+# Realiza comprobaciones de control de calidad en el código fuente
+check:
+    go mod tidy
+    go vet ./...
+    go test ./...
+    golangci-lint run ./...
+    go mod verify
+
+# Compila el programa
+build:
+    @rm -rf @<dirDist>@
+    mkdir -p @<dirDist>@
+    go build -o @<dirDist>@/@<bin>@ -ldflags "-s -w -X main.Version=@<version>@" cmd/{{ .Name|slug }}/main.go
+    upx --best @<dirDist>@/@<bin>@
+    ls -lh @<dirDist>@/@<bin>@
+
+# Ejecuta el programa en modo live, se recompila y lo recarga cada vez que se modifica el código fuente
+live:
+    air --build.cmd "go build -o @<dirDist>@/@<bin>@ -ldflags '-X main.Version=live' cmd/api/main.go" --build.entrypoint "@<dirDist>@/@<bin>@" -- config/config.json
+
+# Ejecuta el programa a traves del comando `go run`)
+run:
+    go run cmd/{{ .Name|slug }}/main.go config/config.json
+"""
+
+[[files.replaces]]
+text = "@<"
+replace = "{{"
+
+[[files.replaces]]
+text = ">@"
+replace = "}}"
+
+# Go.mod file
+[[files]]
+path = "go.mod"
+content = """
+module {{ .ModuleName }}
+
+go 1.26.0
+
+require (
+	github.com/jackc/pgx/v5 v5.11.0
+	github.com/labstack/echo/v5 v5.4.0
+
+    github.com/wfrs-dev/hefesto v0.1.0
+)
+"""
