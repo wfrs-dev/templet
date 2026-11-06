@@ -38,6 +38,9 @@ version = "0.1.0"
 [project.scripts]
 {{ slug .Name }} = "{{ replace (slug .Name) "-" "_" }}:main"
 
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 '''
@@ -122,6 +125,7 @@ content = '''
 #!/bin/sh
 set -eu
 cd "$(dirname "$0")/.."
+python3 -m pip install -e '.[test]' >/dev/null
 python3 -m pytest tests
 '''
 
@@ -159,7 +163,7 @@ jobs:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
       - name: Instalar el paquete
-        run: python -m pip install -e .
+        run: python -m pip install -e '.[test]'
       - name: Test
         run: python -m pytest tests
 '''
