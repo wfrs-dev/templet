@@ -7,11 +7,23 @@ ldflags := "-s -w -X main.Version=" + version
 
 # Realiza comprobaciones de control de calidad en el código fuente
 check:
-    @if [ -n "$(gofmt -l .)" ]; then echo "archivos sin formatear (corré gofmt -w):"; gofmt -l .; exit 1; fi
+    #!/usr/bin/env sh
+    set -eu
+    unformatted=$(gofmt -l .)
+    if [ -n "$unformatted" ]; then
+        echo "archivos sin formatear (corré gofmt -w):"
+        echo "$unformatted"
+        exit 1
+    fi
+    echo "go mod tidy -diff"
     go mod tidy -diff
+    echo "go vet ./..."
     go vet ./...
+    echo "go test ./..."
     go test ./...
+    echo "golangci-lint run ./..."
     golangci-lint run ./...
+    echo "go mod verify"
     go mod verify
 
 # Compila el programa
