@@ -3,6 +3,7 @@ ext := if os_family() == "windows" { ".exe" } else { "" }
 bin := "templet" + ext
 dirDist := "./dist/" + os_family()
 version := shell("git describe --tags --abbrev=0 2>/dev/null || echo 'v0.0.0'")
+ldflags := "-s -w -X main.Version=" + version
 
 # Realiza comprobaciones de control de calidad en el código fuente
 check:
@@ -16,14 +17,10 @@ check:
 build:
     @rm -rf {{dirDist}}
     mkdir -p {{dirDist}}
-    go build -o {{dirDist}}/{{bin}} -ldflags "-s -w -X main.Version={{version}}" cmd/templet/main.go
+    go build -o {{dirDist}}/{{bin}} -ldflags "{{ldflags}}" ./cmd/templet
     upx --best {{dirDist}}/{{bin}}
     ls -lh {{dirDist}}/{{bin}}
 
-# Ejecuta el programa en modo live, se recompila y lo recarga cada vez que se modifica el código fuente
-live:
-    air --build.cmd "go build -o {{dirDist}}/{{bin}} -ldflags '-X main.Version=live' cmd/api/main.go" --build.entrypoint "{{dirDist}}/{{bin}}" -- config/config.json
-
-# Ejecuta el programa a traves del comando `go run`)
+# Ejecuta el programa a traves del comando `go run`, generando en dist/sample para no ensuciar el repositorio
 run:
-    go run cmd/templet/main.go sample.toml
+    go run ./cmd/templet -dest {{dirDist}}/sample docs/sample.toml
