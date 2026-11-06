@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -73,7 +74,7 @@ func Colorize(format string, a ...any) string {
 				lowerKey := strings.ToLower(strings.Trim(s, " <>"))
 				for v := range strings.SplitSeq(lowerKey, "+") {
 					if value, ok := colors[v]; ok {
-						sb.WriteString(fmt.Sprintf("\033[%dm", value))
+						sb.WriteString(escapeSequence(value))
 					}
 				}
 				return sb.String()
@@ -84,6 +85,11 @@ func Colorize(format string, a ...any) string {
 	)
 
 	return fmt.Sprintf(out, a...)
+}
+
+// escapeSequence retorna el codigo ANSI SGR que activa el color indicado
+func escapeSequence(code int) string {
+	return "\033[" + strconv.Itoa(code) + "m"
 }
 
 func IsColor() bool {

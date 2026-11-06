@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 	systpl "text/template"
+	"unicode"
 )
 
 // Replacement structure
@@ -46,11 +47,51 @@ func Slugify(s string) string {
 	return strings.ToLower(s)
 }
 
+// title retorna una copia de s con la inicial de cada palabra en mayuscula.
+// Reemplaza a strings.Title, deprecado desde Go 1.18, preservando su semantica.
+func title(s string) string {
+	prev := ' '
+
+	return strings.Map(func(r rune) rune {
+		if isSeparator(prev) {
+			prev = r
+			return unicode.ToTitle(r)
+		}
+		prev = r
+
+		return r
+	}, s)
+}
+
+// isSeparator indica si r separa palabras para el formateo de titulos
+func isSeparator(r rune) bool {
+	if r <= 0x7F {
+		switch {
+		case '0' <= r && r <= '9':
+			return false
+		case 'a' <= r && r <= 'z':
+			return false
+		case 'A' <= r && r <= 'Z':
+			return false
+		case r == '_':
+			return false
+		}
+
+		return true
+	}
+
+	if unicode.IsLetter(r) || unicode.IsDigit(r) {
+		return false
+	}
+
+	return unicode.IsSpace(r)
+}
+
 func tplFunctions() systpl.FuncMap {
 	return systpl.FuncMap{
 		"upper":       strings.ToUpper,
 		"lower":       strings.ToLower,
-		"title":       strings.Title,
+		"title":       title,
 		"starts":      strings.HasPrefix,
 		"ends":        strings.HasSuffix,
 		"contains":    strings.Contains,
